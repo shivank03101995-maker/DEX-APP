@@ -1,0 +1,17 @@
+export const routes = {
+  login: '/login',
+  home: '/',
+  docs: '/docs',
+  swap: '/swap',
+  aggregator: '/aggregator',
+  crossChain: '/cross-chain',
+  wallet: '/wallet',
+  liquidity: '/liquidity',
+  pools: '/pools',
+  analytics: '/analytics',
+  margin: '/margin',
+  settings: '/settings',
+  security: '/security',
+  auditReports: '/security/audit-reports',
+} as const
+
