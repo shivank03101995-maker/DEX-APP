@@ -1,4 +1,5 @@
 export const routes = {
+  register: '/register',
   login: '/login',
   home: '/',
   docs: '/docs',
@@ -14,4 +15,3 @@ export const routes = {
   security: '/security',
   auditReports: '/security/audit-reports',
 } as const
-

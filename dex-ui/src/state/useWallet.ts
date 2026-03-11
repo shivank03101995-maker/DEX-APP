@@ -8,6 +8,18 @@ type WalletState = {
 
 const STORAGE_KEY = 'dex_ui_wallet_state_v1'
 
+function networkFromChainId(chainId: string | undefined): WalletState['network'] {
+  switch (String(chainId ?? '').toLowerCase()) {
+    case '0x89':
+      return 'Polygon'
+    case '0xa4b1':
+      return 'Arbitrum'
+    case '0x1':
+    default:
+      return 'Ethereum'
+  }
+}
+
 function randomAddress() {
   const hex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
   return `0x${hex}`
@@ -32,10 +44,56 @@ export function useWallet() {
   }, [])
 
   useEffect(() => {
+    const eth = (window as unknown as { ethereum?: { request?: (args: { method: string }) => Promise<unknown> } }).ethereum
+    const request = eth?.request
+    if (!request) return
+    void (async () => {
+      try {
+        const accounts = (await request({ method: 'eth_accounts' })) as unknown
+        const first = Array.isArray(accounts) ? accounts[0] : undefined
+        if (typeof first === 'string' && first.startsWith('0x')) {
+          const chainId = (await request({ method: 'eth_chainId' })) as unknown
+          setState((s) => ({ ...s, connected: true, address: first, network: networkFromChainId(typeof chainId === 'string' ? chainId : undefined) }))
+        }
+      } catch {
+        // ignore
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [state])
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
+    const eth = (
+      window as unknown as {
+        ethereum?: {
+          request?: (args: { method: string }) => Promise<unknown>
+        }
+      }
+    ).ethereum
+
+    const request = eth?.request
+    if (request) {
+      try {
+        const accounts = (await request({ method: 'eth_requestAccounts' })) as unknown
+        const first = Array.isArray(accounts) ? accounts[0] : undefined
+        if (typeof first === 'string' && first.startsWith('0x')) {
+          const chainId = (await request({ method: 'eth_chainId' })) as unknown
+          setState((s) => ({
+            ...s,
+            connected: true,
+            address: first,
+            network: networkFromChainId(typeof chainId === 'string' ? chainId : undefined),
+          }))
+          return
+        }
+      } catch {
+        // fall through to mock connect
+      }
+    }
+
     setState((s) => ({ ...s, connected: true, address: s.address ?? randomAddress() }))
   }, [])
 
@@ -55,4 +113,3 @@ export function useWallet() {
 
   return { state, ui, connect, disconnect, setNetwork }
 }
-

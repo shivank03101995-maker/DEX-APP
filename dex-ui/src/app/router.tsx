@@ -15,9 +15,14 @@ import { SecurityPage } from '../pages/SecurityPage'
 import { AuditReportsPage } from '../pages/AuditReportsPage'
 import { routes } from './routes'
 import { LoginPage } from '../pages/LoginPage'
+import { RegisterPage } from '../pages/RegisterPage'
 import { RequireAuth } from './RequireAuth'
 
 export const router = createBrowserRouter([
+  {
+    path: routes.register,
+    element: <RegisterPage />,
+  },
   {
     path: routes.login,
     element: <LoginPage />,
@@ -47,4 +52,3 @@ export const router = createBrowserRouter([
     ],
   },
 ])
-

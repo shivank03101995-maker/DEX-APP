@@ -1,7 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { apiLogin } from '../lib/api'
 
 type AuthUser = {
+  id: string
   email: string
+  name?: string
+  walletAddress: string
 }
 
 type AuthState =
@@ -10,7 +14,7 @@ type AuthState =
 
 type AuthContextValue = {
   state: AuthState
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string, walletAddress: string) => Promise<void>
   logout: () => void
 }
 
@@ -26,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!raw) return
     try {
       const parsed = JSON.parse(raw) as AuthState
-      if (parsed?.status === 'authenticated' && parsed.user?.email) setState(parsed)
+      if (parsed?.status === 'authenticated' && parsed.user?.email && parsed.user?.id && parsed.user?.walletAddress) setState(parsed)
     } catch {
       // ignore
     }
@@ -36,12 +40,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [state])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, walletAddress: string) => {
     const e = email.trim()
     const p = password.trim()
-    if (!e || !p) throw new Error('Email and password are required.')
-    // Demo auth: accept any non-empty credentials.
-    setState({ status: 'authenticated', user: { email: e } })
+    const w = walletAddress.trim()
+    if (!e || !p || !w) throw new Error('Email, password, and wallet are required.')
+    const user = await apiLogin(e, p, w)
+    setState({ status: 'authenticated', user })
   }, [])
 
   const logout = useCallback(() => {
@@ -58,4 +63,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
 }
-
