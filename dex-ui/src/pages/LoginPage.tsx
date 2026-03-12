@@ -6,6 +6,7 @@ import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { useAuth } from '../state/auth'
 import { useWallet } from '../state/useWallet'
+import { apiWalletNonce } from '../lib/api'
 
 function Waves() {
   return (
@@ -46,6 +47,7 @@ export function LoginPage() {
   const wallet = useWallet()
   const navigate = useNavigate()
   const location = useLocation()
+  const [method, setMethod] = useState<'email' | 'wallet'>('email')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -61,8 +63,14 @@ export function LoginPage() {
     setError(null)
     setLoading(true)
     try {
-      if (!wallet.state.connected || !wallet.state.address) throw new Error('Connect your wallet to continue.')
-      await auth.login(email, password, wallet.state.address)
+      if (method === 'email') {
+        await auth.loginWithEmail({ email, password })
+      } else {
+        if (!wallet.state.connected || !wallet.state.address) throw new Error('Connect your wallet to continue.')
+        const { message } = await apiWalletNonce({ walletAddress: wallet.state.address })
+        const signature = await wallet.signMessage(message)
+        await auth.loginWithWallet({ walletAddress: wallet.state.address, signature })
+      }
       navigate(routes.home, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -113,29 +121,55 @@ export function LoginPage() {
               </div>
 
               <form onSubmit={onSubmit} className="space-y-3 p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={method === 'email' ? 'primary' : 'ghost'}
+                    onClick={() => setMethod('email')}
+                  >
+                    Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={method === 'wallet' ? 'primary' : 'ghost'}
+                    onClick={() => setMethod('wallet')}
+                  >
+                    Wallet
+                  </Button>
+                </div>
+
                 <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Wallet</div>
-                  {wallet.state.connected && wallet.state.address ? (
-                    <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                      <div className="truncate font-mono text-slate-700">{wallet.state.address}</div>
-                      <Button type="button" variant="ghost" onClick={wallet.disconnect}>
-                        Disconnect
-                      </Button>
+                  {method === 'wallet' ? (
+                    <>
+                      <div className="text-xs font-semibold text-slate-600">Wallet</div>
+                      {wallet.state.connected && wallet.state.address ? (
+                        <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                          <div className="truncate font-mono text-slate-700">{wallet.state.address}</div>
+                          <Button type="button" variant="ghost" onClick={wallet.disconnect}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button type="button" className="w-full" onClick={wallet.connect}>
+                          {wallet.ui.label}
+                        </Button>
+                      )}
+                    </>
+                  ) : null}
+                </div>
+
+                {method === 'email' ? (
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-xs font-semibold text-slate-600">Email</div>
+                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
                     </div>
-                  ) : (
-                    <Button type="button" className="w-full" onClick={wallet.connect}>
-                      Connect Wallet
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Email</div>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Password</div>
-                  <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" />
-                </div>
+                    <div className="space-y-1">
+                      <div className="text-xs font-semibold text-slate-600">Password</div>
+                      <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" />
+                    </div>
+                  </>
+                ) : null}
 
                 {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
 
@@ -148,7 +182,7 @@ export function LoginPage() {
                 </Button>
 
                 <div className="text-xs text-slate-500">
-                  Uses the backend at `VITE_API_BASE_URL` to verify credentials.
+                  Email accounts are stored locally (demo). Wallet login requires the wallet to be registered.
                 </div>
               </form>
             </div>

@@ -35,23 +35,71 @@ export type ApiUser = { id: string; email: string; name?: string }
 
 export type ApiUserWithWallet = ApiUser & { walletAddress: string }
 
-export async function apiRegister(params: {
-  email: string
-  password: string
+export type ApiAuthUser = {
+  id: string
+  method: 'email' | 'wallet'
+  email?: string
   name?: string
-  walletAddress: string
-}): Promise<ApiUserWithWallet> {
-  const result = await apiRequest<{ ok: true; user: ApiUserWithWallet }>('/auth/register', {
+  walletAddress?: string
+}
+
+export async function apiRegisterEmail(params: { email: string; password: string; name?: string }): Promise<ApiAuthUser> {
+  const result = await apiRequest<{ ok: true; user: ApiAuthUser }>('/auth/register/email', {
     method: 'POST',
     body: JSON.stringify(params),
   })
   return result.user
 }
 
-export async function apiLogin(email: string, password: string, walletAddress: string): Promise<ApiUserWithWallet> {
-  const result = await apiRequest<{ ok: true; user: ApiUserWithWallet }>('/auth/login', {
+export async function apiRegisterWallet(params: { walletAddress: string; name?: string }): Promise<ApiAuthUser> {
+  const result = await apiRequest<{ ok: true; user: ApiAuthUser }>('/auth/register/wallet', {
     method: 'POST',
-    body: JSON.stringify({ email, password, walletAddress }),
+    body: JSON.stringify(params),
+  })
+  return result.user
+}
+
+export async function apiLoginEmail(params: { email: string; password: string }): Promise<ApiAuthUser> {
+  const result = await apiRequest<{ ok: true; user: ApiAuthUser }>('/auth/login/email', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  })
+  return result.user
+}
+
+export async function apiLoginWallet(params: { walletAddress: string }): Promise<ApiAuthUser> {
+  const result = await apiRequest<{ ok: true; user: ApiAuthUser }>('/auth/login/wallet', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  })
+  return result.user
+}
+
+export type ApiWalletNonce = {
+  walletAddress: string
+  nonce: string
+  message: string
+  expiresAt: string
+}
+
+export async function apiWalletNonce(params: { walletAddress: string }): Promise<ApiWalletNonce> {
+  const result = await apiRequest<{ ok: true } & ApiWalletNonce>('/auth/wallet/nonce', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  })
+  const { walletAddress, nonce, message, expiresAt } = result
+  return { walletAddress, nonce, message, expiresAt }
+}
+
+export async function apiWalletVerify(params: {
+  walletAddress: string
+  signature: string
+  intent: 'register' | 'login'
+  name?: string
+}): Promise<ApiAuthUser> {
+  const result = await apiRequest<{ ok: true; user: ApiAuthUser }>('/auth/wallet/verify', {
+    method: 'POST',
+    body: JSON.stringify(params),
   })
   return result.user
 }

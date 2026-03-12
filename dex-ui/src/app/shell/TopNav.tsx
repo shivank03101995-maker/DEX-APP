@@ -49,7 +49,11 @@ export function TopNav() {
             <Badge tone="slate">
               <span className="inline-flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
-                {auth.state.status === 'authenticated' ? auth.state.user.email : 'Guest'}
+                {auth.state.status === 'authenticated'
+                  // ? auth.state.user.method === 'wallet'
+                  //   ? auth.state.user.walletAddress ?? 'Wallet user'
+                   ? auth.state.user.email ?? 'Profile'
+                  : 'Guest'}
               </span>
             </Badge>
             <Button

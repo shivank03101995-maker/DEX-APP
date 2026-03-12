@@ -4,8 +4,9 @@ import { routes } from '../app/routes'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
-import { apiRegister } from '../lib/api'
 import { useWallet } from '../state/useWallet'
+import { useAuth } from '../state/auth'
+import { apiWalletNonce } from '../lib/api'
 
 function Waves() {
   return (
@@ -43,7 +44,9 @@ function Stars() {
 
 export function RegisterPage() {
   const navigate = useNavigate()
+  const auth = useAuth()
   const wallet = useWallet()
+  const [method, setMethod] = useState<'email' | 'wallet'>('email')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -55,9 +58,16 @@ export function RegisterPage() {
     setError(null)
     setLoading(true)
     try {
-      if (!wallet.state.connected || !wallet.state.address) throw new Error('Connect your wallet to continue.')
-      await apiRegister({ name: name.trim(), email: email.trim(), password: password.trim(), walletAddress: wallet.state.address })
-      navigate(routes.login, { replace: true, state: { registeredEmail: email.trim() } })
+      if (method === 'email') {
+        await auth.registerWithEmail({ name: name.trim() || undefined, email: email.trim(), password: password.trim() })
+        navigate(routes.home, { replace: true })
+      } else {
+        if (!wallet.state.connected || !wallet.state.address) throw new Error('Connect your wallet to continue.')
+        const { message } = await apiWalletNonce({ walletAddress: wallet.state.address })
+        const signature = await wallet.signMessage(message)
+        await auth.registerWithWallet({ name: name.trim() || undefined, walletAddress: wallet.state.address, signature })
+        navigate(routes.home, { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
@@ -100,40 +110,78 @@ export function RegisterPage() {
               <div className="card-header">
                 <div>
                   <div className="card-title">Register</div>
-                  <div className="card-subtitle">Connect a wallet and create credentials</div>
+                  <div className="card-subtitle">Choose email/password or wallet registration</div>
                 </div>
-                {wallet.state.connected ? <Badge tone="green">Wallet connected</Badge> : <Badge tone="slate">Wallet required</Badge>}
+                {method === 'wallet' ? (
+                  wallet.state.connected ? (
+                    <Badge tone="green">Wallet connected</Badge>
+                  ) : (
+                    <Badge tone="slate">Wallet required</Badge>
+                  )
+                ) : (
+                  <Badge tone="indigo">Email</Badge>
+                )}
               </div>
 
               <form onSubmit={onSubmit} className="space-y-3 p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={method === 'email' ? 'primary' : 'ghost'}
+                    onClick={() => setMethod('email')}
+                  >
+                    Email
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={method === 'wallet' ? 'primary' : 'ghost'}
+                    onClick={() => setMethod('wallet')}
+                  >
+                    Wallet
+                  </Button>
+                </div>
+
                 <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Wallet</div>
-                  {wallet.state.connected && wallet.state.address ? (
-                    <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
-                      <div className="truncate font-mono text-slate-700">{wallet.state.address}</div>
-                      <Button type="button" variant="ghost" onClick={wallet.disconnect}>
-                        Disconnect
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button type="button" className="w-full" onClick={wallet.connect}>
-                      Connect Wallet
-                    </Button>
-                  )}
+                  {method === 'wallet' ? (
+                    <>
+                      <div className="text-xs font-semibold text-slate-600">Wallet</div>
+                      {wallet.state.connected && wallet.state.address ? (
+                        <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                          <div className="truncate font-mono text-slate-700">{wallet.state.address}</div>
+                          <Button type="button" variant="ghost" onClick={wallet.disconnect}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button type="button" className="w-full" onClick={wallet.connect}>
+                          {wallet.ui.label}
+                        </Button>
+                      )}
+                    </>
+                  ) : null}
                 </div>
 
                 <div className="space-y-1">
                   <div className="text-xs font-semibold text-slate-600">Name (optional)</div>
                   <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
                 </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Email</div>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold text-slate-600">Password</div>
-                  <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" />
-                </div>
+                {method === 'email' ? (
+                  <>
+                    <div className="space-y-1">
+                      <div className="text-xs font-semibold text-slate-600">Email</div>
+                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-xs font-semibold text-slate-600">Password</div>
+                      <Input
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type="password"
+                        placeholder="At least 6 characters"
+                      />
+                    </div>
+                  </>
+                ) : null}
 
                 {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
 
@@ -141,8 +189,12 @@ export function RegisterPage() {
                   {loading ? 'Creating account…' : 'Register'}
                 </Button>
 
+                <Button type="button" variant="ghost" className="w-full" onClick={() => navigate(routes.login)}>
+                  Already have an account? Login
+                </Button>
+
                 <div className="text-xs text-slate-500">
-                  After registering, you’ll be redirected to login. Backend is configured via `VITE_API_BASE_URL`.
+                  Registration is stored locally (demo). Plug in your backend later if needed.
                 </div>
               </form>
             </div>
@@ -152,4 +204,3 @@ export function RegisterPage() {
     </div>
   )
 }
-

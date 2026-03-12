@@ -17,8 +17,8 @@ function ArchitectureCard({ to, title, subtitle, pill, tone = 'white', icon: Ico
     <div
       className={
         tone === 'purple'
-          ? 'relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2d2a8e] via-[#3b2fb4] to-[#7b3cff] p-4 text-white shadow-sm'
-          : 'rounded-2xl border border-slate-200 bg-white p-4 shadow-sm'
+          ? 'relative h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#2d2a8e] via-[#3b2fb4] to-[#7b3cff] p-4 text-white shadow-sm'
+          : 'h-full w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm'
       }
     >
       {tone === 'purple' ? (
@@ -41,9 +41,9 @@ function ArchitectureCard({ to, title, subtitle, pill, tone = 'white', icon: Ico
         </>
       ) : null}
 
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="relative flex min-h-[140px] flex-col justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 items-center gap-2">
             {Icon ? (
               <span
                 className={
@@ -58,8 +58,8 @@ function ArchitectureCard({ to, title, subtitle, pill, tone = 'white', icon: Ico
             <div
               className={
                 tone === 'purple'
-                  ? 'text-sm font-semibold text-white'
-                  : 'text-sm font-semibold text-slate-900'
+                  ? 'min-w-0 text-sm font-semibold leading-snug text-white'
+                  : 'min-w-0 text-sm font-semibold leading-snug text-slate-900'
               }
             >
               {title}
@@ -69,8 +69,8 @@ function ArchitectureCard({ to, title, subtitle, pill, tone = 'white', icon: Ico
             <div
               className={
                 tone === 'purple'
-                  ? 'mt-1 text-xs text-white/80'
-                  : 'mt-1 text-xs text-slate-600'
+                  ? 'text-xs leading-snug text-white/80'
+                  : 'text-xs leading-snug text-slate-600'
               }
             >
               {subtitle}
@@ -78,12 +78,14 @@ function ArchitectureCard({ to, title, subtitle, pill, tone = 'white', icon: Ico
           ) : null}
         </div>
         {pill ? (
-          <Badge
-            tone={tone === 'purple' ? 'indigo' : 'slate'}
-            className={tone === 'purple' ? 'bg-white/15 text-white' : undefined}
-          >
-            {pill}
-          </Badge>
+          <div className="mt-1">
+            <Badge
+              tone={tone === 'purple' ? 'indigo' : 'slate'}
+              className={tone === 'purple' ? 'bg-white/15 text-white' : undefined}
+            >
+              {pill}
+            </Badge>
+          </div>
         ) : null}
       </div>
     </div>
@@ -121,16 +123,16 @@ export function LandingPage() {
           <Badge tone="indigo">TESTNET | Live</Badge>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.9fr)]">
-          <ArchitectureCard
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1.9fr)]">
+          {/* <ArchitectureCard
             to={routes.home}
             title="Advanced Decentralized Exchange"
             subtitle="Hero-like landing module with QUICK SWAP entrypoint."
             pill="Landing"
             tone="purple"
-          />
+          /> */}
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <ArchitectureCard
               to={routes.docs}
               title="Docs & Analytics"
@@ -159,7 +161,7 @@ export function LandingPage() {
       {/* Row 2: Trading & Swaps */}
       <section className="mt-8 space-y-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trading & Swaps</div>
-        <div className="grid gap-3 md:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <ArchitectureCard
             to={routes.swap}
             title="Swap Tokens"
@@ -209,7 +211,7 @@ export function LandingPage() {
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Liquidity Management</div>
           <Badge tone="indigo">TESTNET | Live</Badge>
         </div>
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <ArchitectureCard
             to={routes.liquidity}
             title="Liquidity Dashboard"
@@ -248,7 +250,7 @@ export function LandingPage() {
       {/* Row 4: Pool & Analytics */}
       <section className="mt-8 space-y-3">
         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pool & Analytics</div>
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <ArchitectureCard
             to={routes.pools}
             title="Pools Overview"
@@ -285,7 +287,7 @@ export function LandingPage() {
       {/* Row 5: Security */}
       <section className="mt-8 space-y-3 mb-4">
         <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Security</div>
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <ArchitectureCard
             to={routes.security}
             title="Security Dashboard"
@@ -322,4 +324,3 @@ export function LandingPage() {
     </div>
   )
 }
-

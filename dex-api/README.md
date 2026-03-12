@@ -2,8 +2,8 @@
 
 Minimal Express + MongoDB (Mongoose) API for:
 
-- Storing user details (`POST /auth/register`)
-- Verifying credentials (`POST /auth/login`)
+- Storing user details (email/password or wallet)
+- Verifying credentials (email/password or wallet)
 
 ## Setup
 
@@ -14,5 +14,7 @@ Minimal Express + MongoDB (Mongoose) API for:
 ## Endpoints
 
 - `GET /health`
-- `POST /auth/register` `{ "email": "...", "password": "...", "name": "...", "walletAddress": "0x..." }`
-- `POST /auth/login` `{ "email": "...", "password": "...", "walletAddress": "0x..." }`
+- `POST /auth/register/email` `{ "email": "...", "password": "...", "name": "..." }`
+- `POST /auth/register/wallet` `{ "walletAddress": "0x...", "name": "..." }`
+- `POST /auth/login/email` `{ "email": "...", "password": "..." }`
+- `POST /auth/login/wallet` `{ "walletAddress": "0x..." }`

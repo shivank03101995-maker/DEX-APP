@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { apiLogin } from '../lib/api'
+import type { ApiAuthUser } from '../lib/api'
+import { apiLoginEmail, apiRegisterEmail, apiWalletVerify } from '../lib/api'
 
 type AuthUser = {
   id: string
-  email: string
+  method: 'email' | 'wallet'
+  email?: string
   name?: string
-  walletAddress: string
+  walletAddress?: string
 }
 
 type AuthState =
@@ -14,7 +16,10 @@ type AuthState =
 
 type AuthContextValue = {
   state: AuthState
-  login: (email: string, password: string, walletAddress: string) => Promise<void>
+  registerWithEmail: (params: { email: string; password: string; name?: string }) => Promise<void>
+  registerWithWallet: (params: { walletAddress: string; signature: string; name?: string }) => Promise<void>
+  loginWithEmail: (params: { email: string; password: string }) => Promise<void>
+  loginWithWallet: (params: { walletAddress: string; signature: string }) => Promise<void>
   logout: () => void
 }
 
@@ -30,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!raw) return
     try {
       const parsed = JSON.parse(raw) as AuthState
-      if (parsed?.status === 'authenticated' && parsed.user?.email && parsed.user?.id && parsed.user?.walletAddress) setState(parsed)
+      if (parsed?.status === 'authenticated' && parsed.user?.id && parsed.user?.method) setState(parsed)
     } catch {
       // ignore
     }
@@ -40,20 +45,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [state])
 
-  const login = useCallback(async (email: string, password: string, walletAddress: string) => {
-    const e = email.trim()
-    const p = password.trim()
-    const w = walletAddress.trim()
-    if (!e || !p || !w) throw new Error('Email, password, and wallet are required.')
-    const user = await apiLogin(e, p, w)
-    setState({ status: 'authenticated', user })
+  const toAuthUser = useCallback((u: ApiAuthUser): AuthUser => {
+    return { id: u.id, method: u.method, email: u.email, name: u.name, walletAddress: u.walletAddress }
   }, [])
+
+  const registerWithEmail = useCallback(
+    async (params: { email: string; password: string; name?: string }) => {
+      const user = await apiRegisterEmail(params)
+      setState({ status: 'authenticated', user: toAuthUser(user) })
+    },
+    [toAuthUser],
+  )
+
+  const registerWithWallet = useCallback(
+    async (params: { walletAddress: string; signature: string; name?: string }) => {
+      const user = await apiWalletVerify({ walletAddress: params.walletAddress, signature: params.signature, intent: 'register', name: params.name })
+      setState({ status: 'authenticated', user: toAuthUser(user) })
+    },
+    [toAuthUser],
+  )
+
+  const doLoginWithEmail = useCallback(
+    async (params: { email: string; password: string }) => {
+      const user = await apiLoginEmail(params)
+      setState({ status: 'authenticated', user: toAuthUser(user) })
+    },
+    [toAuthUser],
+  )
+
+  const doLoginWithWallet = useCallback(
+    async (params: { walletAddress: string; signature: string }) => {
+      const user = await apiWalletVerify({ walletAddress: params.walletAddress, signature: params.signature, intent: 'login' })
+      setState({ status: 'authenticated', user: toAuthUser(user) })
+    },
+    [toAuthUser],
+  )
 
   const logout = useCallback(() => {
     setState({ status: 'anonymous' })
   }, [])
 
-  const value = useMemo<AuthContextValue>(() => ({ state, login, logout }), [login, logout, state])
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      state,
+      registerWithEmail,
+      registerWithWallet,
+      loginWithEmail: doLoginWithEmail,
+      loginWithWallet: doLoginWithWallet,
+      logout,
+    }),
+    [doLoginWithEmail, doLoginWithWallet, logout, registerWithEmail, registerWithWallet, state],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
