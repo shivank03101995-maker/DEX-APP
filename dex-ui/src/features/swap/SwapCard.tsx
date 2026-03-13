@@ -1,14 +1,16 @@
 import { ArrowDownUp, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react'
-import { useMemo } from 'react'
-import { TOKENS } from '../../data/tokens'
+import { useMemo, useState } from 'react'
+import { getDexTokens } from '../../data/tokens'
 import { cn } from '../../lib/cn'
+import { getExplorerTxUrl } from '../../lib/dexConfig'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
 import { Input } from '../../components/ui/Input'
 import type { SwapDraft, SwapStep } from './types'
 
 function tokenOptions() {
-  return TOKENS.map((t) => ({ value: t.symbol, label: `${t.symbol} — ${t.name}` }))
+  const tokens = getDexTokens()
+  return tokens.map((t) => ({ value: t.symbol, label: `${t.symbol} — ${t.name}` }))
 }
 
 function parseAmount(s: string) {
@@ -24,6 +26,10 @@ export function SwapCard({
   onNext,
   onBack,
   onReset,
+  estimatedToOverride,
+  onConfirmSwap,
+  txHash,
+  isConfirming,
 }: {
   title?: string
   step: SwapStep
@@ -32,22 +38,31 @@ export function SwapCard({
   onNext: () => void
   onBack: () => void
   onReset: () => void
+  /** When set (e.g. from chain quote), used instead of demo rate for "to" amount */
+  estimatedToOverride?: string
+  /** When set, Confirm button runs real swap and parent advances to Pending */
+  onConfirmSwap?: (draft: SwapDraft) => Promise<string | null>
+  txHash?: string
+  isConfirming?: boolean
 }) {
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const options = useMemo(() => tokenOptions(), [])
   const estRate = useMemo(() => {
     const from = parseAmount(draft.fromAmount)
     if (!from) return 0
-    // demo pricing logic
-    const price = draft.fromToken === 'ETH' && draft.toToken === 'USDC' ? 2000 : 1.25
-    return price
+    if (draft.fromToken === 'TKA' && draft.toToken === 'TKB') return 1
+    if (draft.fromToken === 'TKB' && draft.toToken === 'TKA') return 1
+    if (draft.fromToken === 'ETH' && draft.toToken === 'USDC') return 2000
+    return 1.25
   }, [draft.fromAmount, draft.fromToken, draft.toToken])
 
-  const estimatedTo = useMemo(() => {
+  const estimatedToFallback = useMemo(() => {
     const from = parseAmount(draft.fromAmount)
     if (!from) return ''
-    const est = from * (estRate || 1)
-    return est.toFixed(4)
+    return (from * (estRate || 1)).toFixed(4)
   }, [draft.fromAmount, estRate])
+
+  const estimatedTo = estimatedToOverride !== undefined && estimatedToOverride !== '' ? estimatedToOverride : estimatedToFallback
 
   const content = (
     <div className="space-y-3 p-4">
@@ -137,14 +152,38 @@ export function SwapCard({
             <div className="mt-2 text-sm font-bold text-slate-900">
               {draft.fromAmount || '0'} {draft.fromToken} → {draft.toAmount || estimatedTo || '0'} {draft.toToken}
             </div>
-            <div className="mt-1 text-xs text-slate-600">Route: Best price (demo) • Fee: 0.30%</div>
+            <div className="mt-1 text-xs text-slate-600">
+              {onConfirmSwap ? 'Route: DEX Router • Fee: 0.30%' : 'Route: Best price (demo) • Fee: 0.30%'}
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onBack}>
+            <Button variant="ghost" onClick={onBack} disabled={confirmLoading || isConfirming}>
               Back
             </Button>
-            <Button className="flex-1" onClick={onNext}>
-              Confirm Swap
+            <Button
+              className="flex-1"
+              onClick={async () => {
+                if (onConfirmSwap) {
+                  setConfirmLoading(true)
+                  try {
+                    await onConfirmSwap(draft)
+                  } finally {
+                    setConfirmLoading(false)
+                  }
+                } else {
+                  onNext()
+                }
+              }}
+              disabled={confirmLoading || isConfirming}
+            >
+              {confirmLoading || isConfirming ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Confirming…
+                </>
+              ) : (
+                'Confirm Swap'
+              )}
             </Button>
           </div>
         </div>
@@ -153,17 +192,35 @@ export function SwapCard({
       {step === 'pending' ? (
         <div className="space-y-3 p-4">
           <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
-            <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-indigo-600" />
-            <div>
-              <div className="text-sm font-bold text-slate-900">Transaction Pending</div>
-              <div className="mt-1 text-xs text-slate-600">Waiting for confirmations…</div>
+            {txHash ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            ) : (
+              <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-indigo-600" />
+            )}
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-slate-900">
+                {txHash ? 'Transaction confirmed' : 'Transaction Pending'}
+              </div>
+              <div className="mt-1 text-xs text-slate-600">
+                {txHash ? 'Swap completed on chain.' : 'Waiting for confirmations…'}
+              </div>
               <div className="mt-2 text-xs font-semibold text-slate-700">
                 {draft.fromAmount || '0'} {draft.fromToken} → {draft.toAmount || estimatedTo || '0'} {draft.toToken}
               </div>
+              {txHash ? (
+                <a
+                  href={getExplorerTxUrl(txHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-xs font-medium text-indigo-600 underline"
+                >
+                  View on explorer →
+                </a>
+              ) : null}
             </div>
           </div>
           <Button className="w-full" onClick={onNext}>
-            Simulate Confirmed
+            {txHash ? 'Done' : 'Simulate Confirmed'}
           </Button>
         </div>
       ) : null}
@@ -174,10 +231,22 @@ export function SwapCard({
             <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-700" />
             <div>
               <div className="text-sm font-bold text-slate-900">Swap Successful</div>
-              <div className="mt-1 text-xs text-slate-600">Your swap has completed (demo).</div>
+              <div className="mt-1 text-xs text-slate-600">
+                {txHash ? 'Your swap has completed on chain.' : 'Your swap has completed (demo).'}
+              </div>
               <div className="mt-2 text-xs font-semibold text-slate-700">
                 {draft.fromAmount || '0'} {draft.fromToken} → {draft.toAmount || estimatedTo || '0'} {draft.toToken}
               </div>
+              {txHash ? (
+                <a
+                  href={getExplorerTxUrl(txHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-xs font-medium text-indigo-600 underline"
+                >
+                  View on explorer →
+                </a>
+              ) : null}
             </div>
           </div>
           <Button variant="ghost" className="w-full" onClick={onReset}>

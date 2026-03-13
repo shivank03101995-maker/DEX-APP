@@ -4,24 +4,23 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
-import { TOKENS } from '../data/tokens'
+import { getDexTokens, type TokenSymbol } from '../data/tokens'
 
 type Step = 'dashboard' | 'add' | 'confirm' | 'remove'
 
+const defaultTokens = getDexTokens().filter((t) => t.symbol !== 'WBTC')
+
 export function LiquidityPage() {
+  const tokens = useMemo(() => getDexTokens().filter((t) => t.symbol !== 'WBTC'), [])
   const [step, setStep] = useState<Step>('dashboard')
-  const [pairA, setPairA] = useState<'ETH' | 'USDC' | 'DAI' | 'MATIC'>('ETH')
-  const [pairB, setPairB] = useState<'ETH' | 'USDC' | 'DAI' | 'MATIC'>('USDC')
+  const [pairA, setPairA] = useState<TokenSymbol>(defaultTokens[0]?.symbol ?? 'ETH')
+  const [pairB, setPairB] = useState<TokenSymbol>(defaultTokens[1]?.symbol ?? 'USDC')
   const [amountA, setAmountA] = useState('')
   const [amountB, setAmountB] = useState('')
 
   const options = useMemo(
-    () =>
-      TOKENS.filter((t) => t.symbol !== 'WBTC').map((t) => ({
-        value: t.symbol as 'ETH' | 'USDC' | 'DAI' | 'MATIC',
-        label: `${t.symbol} — ${t.name}`,
-      })),
-    [],
+    () => tokens.map((t) => ({ value: t.symbol, label: `${t.symbol} — ${t.name}` })),
+    [tokens],
   )
 
   return (

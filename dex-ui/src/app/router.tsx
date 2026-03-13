@@ -18,17 +18,18 @@ import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { RequireAuth } from './RequireAuth'
 
-export const router = createBrowserRouter([
-  {
-    path: routes.register,
-    element: <RegisterPage />,
-  },
-  {
-    path: routes.login,
-    element: <LoginPage />,
-  },
-  {
-    path: routes.home,
+export const router = createBrowserRouter(
+  [
+    {
+      path: routes.register,
+      element: <RegisterPage />,
+    },
+    {
+      path: routes.login,
+      element: <LoginPage />,
+    },
+    {
+      path: routes.home,
     element: (
       <RequireAuth>
         <AppShell />
@@ -50,5 +51,7 @@ export const router = createBrowserRouter([
       { path: routes.auditReports, element: <AuditReportsPage /> },
       { path: '*', element: <Navigate to={routes.home} replace /> },
     ],
-  },
-])
+    },
+  ],
+  { future: { v7_startTransition: true } }
+)

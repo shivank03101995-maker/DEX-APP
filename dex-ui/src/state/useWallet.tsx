@@ -30,6 +30,8 @@ function networkFromChainId(chainIdHex: string | undefined): WalletState['networ
   switch (String(chainIdHex ?? '').toLowerCase()) {
     case '0x89':
       return 'Polygon'
+    case '0x13882':
+      return 'Polygon' // Amoy testnet (80002)
     case '0xa4b1':
       return 'Arbitrum'
     case '0x1':
@@ -48,8 +50,12 @@ type WalletOption = {
   icon?: string
 }
 
+export type { EthereumProvider }
+
 type WalletContextValue = {
   state: WalletState
+  /** EIP-1193 provider for ethers.BrowserProvider(provider) — use for contract calls */
+  provider: EthereumProvider | undefined
   ui: { label: string }
   wallets: WalletOption[]
   modal: { isOpen: boolean; open: () => void; close: () => void }
@@ -276,6 +282,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<WalletContextValue>(
     () => ({
       state,
+      provider: selectedProvider ?? getEthereum(),
       ui,
       wallets,
       modal: { isOpen: modalOpen, open: openModal, close: closeModal },
@@ -288,7 +295,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       disconnect,
       setNetwork,
     }),
-    [closeModal, connect, connectInjected, connectWallet, disconnect, modalOpen, openModal, setNetwork, signMessage, state, ui, wallets],
+    [closeModal, connect, connectInjected, connectWallet, disconnect, modalOpen, openModal, setNetwork, signMessage, selectedProvider, state, ui, wallets],
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>

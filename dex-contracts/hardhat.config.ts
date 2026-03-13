@@ -46,12 +46,15 @@ const accounts = privateKey ? [privateKey] : []
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.24',
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
-      viaIR: true,
+  version: "0.8.24",
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200
     },
-  },
+    viaIR: true
+  }
+},
   paths: {
     sources: './contracts',
     tests: './test',
@@ -73,10 +76,8 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: {
-      polygon: process.env.POLYGONSCAN_API_KEY ?? '',
-      polygonAmoy: process.env.POLYGONSCAN_API_KEY ?? '',
-    },
+   
+            apiKey: process.env.POLYGONSCAN_API_KEY
   },
 }
 

@@ -1,0 +1,19 @@
+{
+  "network": "amoy",
+  "chainId": 80002,
+  "deployer": "0xaa896C9046E6E07DE0da511B3679C317Def30eB4",
+  "updatedAt": "2026-03-13T08:58:17.395Z",
+  "contracts": {
+    "DEXFactory": "0x535a2E57c43D87fccEaBF1f5E83d3B780B323220",
+    "DEXRouter": "0x13b17637a1c1929B61Ae557DF004932f5b246845",
+    "TokenA": "0xc07cf0dA0722448C2e60a0d91296DC6D9A5A10c7",
+    "TokenB": "0xDf1cA9dd8EE9294cd62f230EE6bE54Cfc20161B5",
+    "Pair": "0x35f4A919983e85a22a2B47f4D6758646a141eE65"
+  },
+  "tx": {
+    "TokenA": null,
+    "TokenB": null,
+    "AddLiquidity": "0x6511bc22ce6d94e88cc4e3727939f33dbc42db95149432beb4c5a0fc0d34d819",
+    "Swap": "0x6ab1e891e0cb6b3da2e46cd8ad406a95844c6c49ba29294348e4374be13a794b"
+  }
+}

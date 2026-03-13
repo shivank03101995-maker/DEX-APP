@@ -6,7 +6,11 @@
     "compile": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat compile",
     "test": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat test",
     "deploy:amoy": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/deploy.ts --network amoy",
-    "deploy:polygon": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/deploy.ts --network polygon"
+    "deploy:polygon": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/deploy.ts --network polygon",
+    "seed:amoy": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/seed.ts --network amoy",
+    "seed:polygon": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/seed.ts --network polygon",
+    "balances:amoy": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/balances.ts --network amoy",
+    "balances:polygon": "HARDHAT_DISABLE_TELEMETRY=true XDG_CONFIG_HOME=.hardhat XDG_CACHE_HOME=.hardhat-cache hardhat run scripts/balances.ts --network polygon"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "hh2",

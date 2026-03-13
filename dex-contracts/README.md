@@ -49,8 +49,18 @@ Deploy to Amoy (recommended first):
 npm run deploy:amoy
 ```
 
+Seed 2 mock tokens + create a pool + do a test swap on Amoy:
+
+```bash
+npm run seed:amoy
+```
+
 Deploy to Polygon mainnet:
 
 ```bash
 npm run deploy:polygon
 ```
+
+## Deployments output
+
+Scripts write addresses to `dex-contracts/deployments/<network>.json` (e.g. `amoy.json`), which you can reuse in the UI/app config.
